@@ -1,0 +1,75 @@
+{
+  "name": "Hospital",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Hospital name"
+    },
+    "city": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string",
+      "enum": [
+        "North India",
+        "South India",
+        "East India",
+        "West India"
+      ]
+    },
+    "address": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "total_beds": {
+      "type": "number"
+    },
+    "specialities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "facilities": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "established_year": {
+      "type": "number"
+    },
+    "accreditations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "name",
+    "city",
+    "region"
+  ]
+}

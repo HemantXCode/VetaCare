@@ -1,0 +1,59 @@
+{
+  "name": "Appointment",
+  "type": "object",
+  "properties": {
+    "patient_email": {
+      "type": "string"
+    },
+    "patient_name": {
+      "type": "string"
+    },
+    "doctor_id": {
+      "type": "string"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "hospital_id": {
+      "type": "string"
+    },
+    "hospital_name": {
+      "type": "string"
+    },
+    "specialization": {
+      "type": "string"
+    },
+    "appointment_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "appointment_time": {
+      "type": "string"
+    },
+    "consultation_fee": {
+      "type": "number"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "completed",
+        "cancelled",
+        "no-show"
+      ],
+      "default": "scheduled"
+    },
+    "symptoms": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "patient_email",
+    "doctor_id",
+    "appointment_date",
+    "appointment_time"
+  ]
+}
