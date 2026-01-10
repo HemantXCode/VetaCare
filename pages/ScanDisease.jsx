@@ -40,6 +40,90 @@ export default function ScanDisease() {
     }
   };
 
+  // Mock AI Analysis - generates realistic demo results
+  const generateMockAnalysis = () => {
+    const mockResults = [
+      {
+        image_type: "Skin Condition - Dermatological Image",
+        possible_conditions: ["Eczema", "Dermatitis", "Allergic Reaction"],
+        severity: "Mild",
+        precautions: [
+          "Keep the affected area clean and dry",
+          "Avoid scratching or rubbing the area",
+          "Use hypoallergenic moisturizers",
+          "Avoid potential allergens and irritants",
+          "Monitor for any changes or worsening"
+        ],
+        recommended_specialist: "Dermatology",
+        analysis_summary: "The image shows signs consistent with a mild inflammatory skin condition. The affected area displays redness and possible irritation. This appears to be an early-stage condition that should respond well to topical treatment.",
+        confidence_level: "Medium"
+      },
+      {
+        image_type: "Wound or Injury Assessment",
+        possible_conditions: ["Minor Abrasion", "Superficial Wound", "Skin Laceration"],
+        severity: "Mild",
+        precautions: [
+          "Clean the wound with antiseptic solution",
+          "Keep the area covered with sterile dressing",
+          "Watch for signs of infection (redness, swelling, pus)",
+          "Change dressing daily",
+          "Seek immediate care if bleeding doesn't stop"
+        ],
+        recommended_specialist: "General Surgery",
+        analysis_summary: "The image shows what appears to be a superficial wound or minor injury. The wound appears relatively clean with minimal tissue damage. Proper wound care and monitoring for infection are recommended.",
+        confidence_level: "High"
+      },
+      {
+        image_type: "Eye Condition or Irritation",
+        possible_conditions: ["Conjunctivitis", "Eye Irritation", "Dry Eye"],
+        severity: "Moderate",
+        precautions: [
+          "Avoid rubbing your eyes",
+          "Use artificial tears or lubricating drops",
+          "Practice good hand hygiene",
+          "Avoid sharing towels or personal items",
+          "Remove contact lenses if worn"
+        ],
+        recommended_specialist: "Ophthalmology",
+        analysis_summary: "The image suggests possible eye irritation or inflammation. The condition may require prescription eye drops or medication. It's important to have this evaluated by an eye specialist to prevent complications.",
+        confidence_level: "Medium"
+      },
+      {
+        image_type: "Rash or Skin Inflammation",
+        possible_conditions: ["Contact Dermatitis", "Heat Rash", "Viral Rash"],
+        severity: "Moderate",
+        precautions: [
+          "Avoid hot showers or baths",
+          "Wear loose, breathable clothing",
+          "Apply cool compresses to affected areas",
+          "Take antihistamines if itching is severe",
+          "Avoid known triggers or allergens"
+        ],
+        recommended_specialist: "Dermatology",
+        analysis_summary: "The image shows a widespread rash pattern that may be caused by various factors including allergies, infections, or environmental triggers. Medical evaluation is recommended to determine the underlying cause and appropriate treatment.",
+        confidence_level: "Medium"
+      },
+      {
+        image_type: "Joint or Musculoskeletal Issue",
+        possible_conditions: ["Swelling", "Inflammation", "Minor Trauma"],
+        severity: "Mild",
+        precautions: [
+          "Apply ice to reduce swelling (20 minutes, several times daily)",
+          "Elevate the affected area when resting",
+          "Avoid putting weight or strain on the area",
+          "Use compression bandage if recommended",
+          "Take over-the-counter pain relief as needed"
+        ],
+        recommended_specialist: "Orthopaedics",
+        analysis_summary: "The image indicates possible swelling or inflammation in the joint area. This could be due to minor trauma, overuse, or inflammatory conditions. Rest and conservative management are recommended initially.",
+        confidence_level: "Medium"
+      }
+    ];
+
+    // Return a random mock result
+    return mockResults[Math.floor(Math.random() * mockResults.length)];
+  };
+
   const handleAnalyze = async () => {
     if (!selectedFile) return;
 
@@ -47,46 +131,11 @@ export default function ScanDisease() {
     setError(null);
 
     try {
-      // Upload the file first
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: selectedFile });
+      // Simulate API delay for realistic demo (1.5-2.5 seconds)
+      await new Promise(resolve => setTimeout(resolve, 1500 + Math.random() * 1000));
 
-      // Analyze with AI
-      const analysis = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a medical image analysis AI assistant. Analyze this uploaded medical image and provide:
-1. What type of image this appears to be (skin condition, medical report, X-ray, etc.)
-2. Possible conditions visible (if any)
-3. Severity level (Mild, Moderate, Severe, or Cannot Determine)
-4. Recommended precautions and next steps
-5. What type of medical specialist should be consulted
-
-Important: Always include a disclaimer that this is an AI-assisted preliminary analysis and not a medical diagnosis.`,
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            image_type: { type: "string" },
-            possible_conditions: { 
-              type: "array", 
-              items: { type: "string" }
-            },
-            severity: { 
-              type: "string", 
-              enum: ["Mild", "Moderate", "Severe", "Cannot Determine"] 
-            },
-            precautions: { 
-              type: "array", 
-              items: { type: "string" }
-            },
-            recommended_specialist: { type: "string" },
-            analysis_summary: { type: "string" },
-            confidence_level: { 
-              type: "string",
-              enum: ["Low", "Medium", "High"]
-            }
-          }
-        }
-      });
-
+      // Generate mock analysis
+      const analysis = generateMockAnalysis();
       setResult(analysis);
     } catch (err) {
       console.error(err);
