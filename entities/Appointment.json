@@ -2,57 +2,65 @@
   "name": "Appointment",
   "type": "object",
   "properties": {
-    "patient_email": {
-      "type": "string"
-    },
-    "patient_name": {
-      "type": "string"
-    },
-    "doctor_id": {
-      "type": "string"
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to patient"
     },
     "doctor_name": {
-      "type": "string"
+      "type": "string",
+      "description": "Name of the doctor"
     },
-    "hospital_id": {
-      "type": "string"
+    "doctor_specialty": {
+      "type": "string",
+      "description": "Doctor's specialty"
     },
-    "hospital_name": {
-      "type": "string"
+    "hospital": {
+      "type": "string",
+      "description": "Hospital or clinic name"
     },
-    "specialization": {
-      "type": "string"
+    "appointment_type": {
+      "type": "string",
+      "enum": [
+        "in_person",
+        "video"
+      ],
+      "description": "Type of appointment"
     },
     "appointment_date": {
       "type": "string",
-      "format": "date"
+      "format": "date",
+      "description": "Date of appointment"
     },
     "appointment_time": {
-      "type": "string"
+      "type": "string",
+      "description": "Time slot"
     },
-    "consultation_fee": {
-      "type": "number"
+    "symptoms": {
+      "type": "string",
+      "description": "Patient symptoms or problem description"
     },
     "status": {
       "type": "string",
       "enum": [
-        "scheduled",
+        "confirmed",
+        "pending",
         "completed",
-        "cancelled",
-        "no-show"
+        "cancelled"
       ],
-      "default": "scheduled"
+      "default": "confirmed"
     },
-    "symptoms": {
-      "type": "string"
+    "consultation_fee": {
+      "type": "number",
+      "description": "Fee for consultation"
     },
     "notes": {
-      "type": "string"
+      "type": "string",
+      "description": "Additional notes"
     }
   },
   "required": [
-    "patient_email",
-    "doctor_id",
+    "patient_id",
+    "doctor_name",
     "appointment_date",
     "appointment_time"
   ]

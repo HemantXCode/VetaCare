@@ -1,0 +1,90 @@
+{
+  "name": "HealthPlan",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to patient"
+    },
+    "plan_name": {
+      "type": "string",
+      "description": "Name of the health plan"
+    },
+    "goal": {
+      "type": "string",
+      "description": "Primary health goal"
+    },
+    "duration_weeks": {
+      "type": "number",
+      "description": "Plan duration in weeks"
+    },
+    "daily_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "description": "Daily tasks to complete"
+    },
+    "weekly_goals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Weekly health goals"
+    },
+    "diet_recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Diet recommendations"
+    },
+    "exercise_plan": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "day": {
+            "type": "string"
+          },
+          "activity": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Weekly exercise schedule"
+    },
+    "progress": {
+      "type": "number",
+      "description": "Progress percentage 0-100"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed",
+        "paused"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "patient_id",
+    "plan_name",
+    "goal"
+  ]
+}

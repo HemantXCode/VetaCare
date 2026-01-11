@@ -1,0 +1,30 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to patient"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Chat session identifier"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "user",
+        "assistant"
+      ],
+      "description": "Message sender role"
+    },
+    "content": {
+      "type": "string",
+      "description": "Message content"
+    }
+  },
+  "required": [
+    "role",
+    "content"
+  ]
+}

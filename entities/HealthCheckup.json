@@ -1,0 +1,55 @@
+{
+  "name": "HealthCheckup",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to patient"
+    },
+    "responses": {
+      "type": "array",
+      "description": "Array of Q&A responses",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "risk_score": {
+      "type": "number",
+      "description": "Overall health risk score 0-100"
+    },
+    "risk_level": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high",
+        "critical"
+      ]
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Health recommendations"
+    },
+    "areas_of_concern": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Health areas needing attention"
+    }
+  },
+  "required": [
+    "patient_id"
+  ]
+}

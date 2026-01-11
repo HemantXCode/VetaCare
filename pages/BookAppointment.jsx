@@ -1,240 +1,245 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Calendar, Clock, ArrowLeft, ArrowRight, CheckCircle, 
-  Stethoscope, Building2, CreditCard, User, Phone, Mail,
-  MessageCircle, Star, Bell, AlertCircle
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  Calendar, Clock, User, Building2, Video, MapPin, Stethoscope, 
+  ChevronRight, ChevronLeft, Check, Loader2, Sparkles, AlertCircle,
+  FileText, Brain
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { motion, AnimatePresence } from 'framer-motion';
 import { format, addDays } from 'date-fns';
+import EmergencyBar from '../components/vetacare/EmergencyBar';
+import Navbar from '../components/vetacare/Navbar';
+import AIChatbot from '../components/vetacare/AIChatbot';
 
-const timeSlots = [
-  '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-  '12:00 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM',
-  '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM'
+const doctors = [
+  { id: 1, name: 'Dr. Sarah Johnson', specialty: 'Cardiologist', experience: 15, rating: 4.9, fee: 150, hospital: 'Metro Medical Center', image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150', available: ['09:00', '10:00', '11:00', '14:00', '15:00'] },
+  { id: 2, name: 'Dr. Michael Chen', specialty: 'Dermatologist', experience: 12, rating: 4.8, fee: 120, hospital: 'City General Hospital', image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150', available: ['10:00', '11:30', '13:00', '16:00'] },
+  { id: 3, name: 'Dr. Emily Davis', specialty: 'Pediatrician', experience: 10, rating: 4.9, fee: 100, hospital: "Children's Hospital", image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=150', available: ['09:30', '11:00', '14:30', '16:30'] },
+  { id: 4, name: 'Dr. James Wilson', specialty: 'Orthopedic', experience: 20, rating: 4.7, fee: 180, hospital: 'Metro Medical Center', image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150', available: ['08:00', '10:30', '13:30', '15:30'] },
+  { id: 5, name: 'Dr. Lisa Thompson', specialty: 'Neurologist', experience: 18, rating: 4.8, fee: 200, hospital: 'Neuro Institute', image: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=150', available: ['09:00', '11:30', '14:00', '17:00'] },
+  { id: 6, name: 'Dr. Robert Martinez', specialty: 'General Physician', experience: 8, rating: 4.6, fee: 80, hospital: 'Community Health Clinic', image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150', available: ['08:30', '10:00', '12:00', '15:00', '17:30'] },
+  { id: 7, name: 'Dr. Jennifer Lee', specialty: 'Gynecologist', experience: 14, rating: 4.9, fee: 130, hospital: "Women's Health Center", image: 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=150', available: ['09:00', '11:00', '14:00', '16:00'] },
+  { id: 8, name: 'Dr. David Brown', specialty: 'Psychiatrist', experience: 16, rating: 4.7, fee: 160, hospital: 'Mental Wellness Center', image: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150', available: ['10:00', '12:00', '15:00', '17:00'] },
 ];
 
+const specialties = ['All', 'General Physician', 'Cardiologist', 'Dermatologist', 'Pediatrician', 'Orthopedic', 'Neurologist', 'Gynecologist', 'Psychiatrist'];
+
+const timeSlots = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'];
+
 export default function BookAppointment() {
-  const [searchParams] = useSearchParams();
-  const doctorIdParam = searchParams.get('doctorId');
-  const hospitalIdParam = searchParams.get('hospitalId');
-
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [patient, setPatient] = useState(null);
   const [step, setStep] = useState(1);
-  const [selectedDoctor, setSelectedDoctor] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedTime, setSelectedTime] = useState(null);
-  const [symptoms, setSymptoms] = useState('');
-  const [user, setUser] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [aiSuggesting, setAiSuggesting] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState(null);
   const [bookingComplete, setBookingComplete] = useState(false);
-  const [bookingDetails, setBookingDetails] = useState(null);
+  const [createdAppointment, setCreatedAppointment] = useState(null);
 
-  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    specialty: 'All',
+    doctor: null,
+    appointmentType: 'in_person',
+    date: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+    time: '',
+    symptoms: ''
+  });
 
-  // Get user
   useEffect(() => {
-    const getUser = async () => {
-      const isAuth = await base44.auth.isAuthenticated();
-      if (isAuth) {
-        const userData = await base44.auth.me();
-        setUser(userData);
-      }
-    };
-    getUser();
+    checkAuth();
   }, []);
 
-  // Fetch doctors
-  const { data: doctors = [] } = useQuery({
-    queryKey: ['doctors-booking'],
-    queryFn: () => base44.entities.Doctor.list('-rating', 100)
-  });
-
-  // Pre-select doctor if provided
-  useEffect(() => {
-    if (doctorIdParam && doctors.length > 0) {
-      const doctor = doctors.find(d => d.id === doctorIdParam);
-      if (doctor) {
-        setSelectedDoctor(doctor);
-        setStep(2);
+  const checkAuth = async () => {
+    try {
+      const isAuth = await base44.auth.isAuthenticated();
+      if (!isAuth) {
+        base44.auth.redirectToLogin(createPageUrl('BookAppointment'));
+        return;
       }
+
+      const user = await base44.auth.me();
+      const patients = await base44.entities.Patient.filter({ user_id: user.email });
+      
+      if (patients.length === 0) {
+        navigate(createPageUrl('Onboarding'));
+        return;
+      }
+
+      setPatient(patients[0]);
+    } catch (error) {
+      console.error('Auth error:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [doctorIdParam, doctors]);
-
-  // Generate next 7 days
-  const availableDates = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i + 1));
-
-  // Create appointment mutation
-  const createAppointment = useMutation({
-    mutationFn: async (data) => {
-      return await base44.entities.Appointment.create(data);
-    },
-    onSuccess: (data) => {
-      setBookingDetails(data);
-      setBookingComplete(true);
-      queryClient.invalidateQueries(['appointments']);
-    }
-  });
-
-  const handleSubmit = async () => {
-    if (!user) {
-      base44.auth.redirectToLogin(window.location.href);
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    const appointmentData = {
-      patient_email: user.email,
-      patient_name: user.full_name,
-      doctor_id: selectedDoctor.id,
-      doctor_name: selectedDoctor.name,
-      hospital_id: selectedDoctor.hospital_id,
-      hospital_name: selectedDoctor.hospital_name,
-      specialization: selectedDoctor.specialization,
-      appointment_date: format(selectedDate, 'yyyy-MM-dd'),
-      appointment_time: selectedTime,
-      consultation_fee: selectedDoctor.consultation_fee || 500,
-      symptoms: symptoms,
-      status: 'scheduled'
-    };
-
-    await createAppointment.mutateAsync(appointmentData);
-    setIsSubmitting(false);
   };
 
-  if (bookingComplete) {
+  // Fetch patient's diagnosis history for AI suggestions
+  const { data: diagnoses = [] } = useQuery({
+    queryKey: ['diagnoses', patient?.id],
+    queryFn: () => base44.entities.AIDiagnosis.filter({ patient_id: patient.id }, '-created_date', 5),
+    enabled: !!patient?.id
+  });
+
+  const { data: reports = [] } = useQuery({
+    queryKey: ['reports', patient?.id],
+    queryFn: () => base44.entities.MedicalReport.filter({ patient_id: patient.id }, '-created_date', 5),
+    enabled: !!patient?.id
+  });
+
+  const filteredDoctors = formData.specialty === 'All' 
+    ? doctors 
+    : doctors.filter(d => d.specialty === formData.specialty);
+
+  const getAISuggestion = async () => {
+    if (!formData.symptoms && diagnoses.length === 0) return;
+    
+    setAiSuggesting(true);
+    try {
+      const diagnosisHistory = diagnoses.map(d => `${d.condition} (${d.severity} severity)`).join(', ');
+      const reportTypes = reports.map(r => r.report_type).join(', ');
+
+      const response = await base44.integrations.Core.InvokeLLM({
+        prompt: `Based on the following patient information, suggest the most appropriate medical specialist:
+
+Patient Symptoms: ${formData.symptoms || 'Not specified'}
+Previous Diagnoses: ${diagnosisHistory || 'None'}
+Medical Reports: ${reportTypes || 'None'}
+Patient Age: ${patient?.age || 'Unknown'}
+Patient Allergies: ${patient?.allergies || 'None'}
+
+From this list of available specialists, suggest the TOP 2 most relevant:
+- General Physician
+- Cardiologist
+- Dermatologist
+- Pediatrician
+- Orthopedic
+- Neurologist
+- Gynecologist
+- Psychiatrist
+
+Provide a brief explanation for each suggestion.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            suggestions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  specialty: { type: "string" },
+                  reason: { type: "string" },
+                  priority: { type: "number" }
+                }
+              }
+            },
+            general_advice: { type: "string" }
+          }
+        }
+      });
+
+      setAiSuggestion(response);
+    } catch (error) {
+      console.error('AI suggestion error:', error);
+    } finally {
+      setAiSuggesting(false);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.doctor || !formData.date || !formData.time) return;
+
+    setSubmitting(true);
+    try {
+      const appointment = await base44.entities.Appointment.create({
+        patient_id: patient.id,
+        doctor_name: formData.doctor.name,
+        doctor_specialty: formData.doctor.specialty,
+        hospital: formData.doctor.hospital,
+        appointment_type: formData.appointmentType,
+        appointment_date: formData.date,
+        appointment_time: formData.time,
+        symptoms: formData.symptoms,
+        status: 'confirmed',
+        consultation_fee: formData.doctor.fee
+      });
+
+      setCreatedAppointment(appointment);
+      setBookingComplete(true);
+    } catch (error) {
+      console.error('Booking error:', error);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const generateDates = () => {
+    const dates = [];
+    for (let i = 1; i <= 7; i++) {
+      dates.push(addDays(new Date(), i));
+    }
+    return dates;
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-lg w-full"
-        >
-          <Card className="overflow-hidden">
-            <div className="bg-gradient-to-br from-green-500 to-green-600 p-8 text-center text-white">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: 'spring' }}
-                className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4"
-              >
-                <CheckCircle className="w-12 h-12 text-green-500" />
-              </motion.div>
-              <h1 className="text-2xl font-bold mb-2">Appointment Confirmed!</h1>
-              <p className="text-green-100">Your appointment has been successfully scheduled</p>
-            </div>
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
-                  <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-                    <Stethoscope className="w-6 h-6 text-teal-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-slate-500">Doctor</p>
-                    <p className="font-semibold text-slate-800">Dr. {selectedDoctor.name}</p>
-                    <p className="text-sm text-teal-600">{selectedDoctor.specialization}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-50 rounded-xl">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Calendar className="w-4 h-4 text-teal-600" />
-                      <p className="text-sm text-slate-500">Date</p>
-                    </div>
-                    <p className="font-semibold text-slate-800">
-                      {format(selectedDate, 'dd MMM yyyy')}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-slate-50 rounded-xl">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Clock className="w-4 h-4 text-teal-600" />
-                      <p className="text-sm text-slate-500">Time</p>
-                    </div>
-                    <p className="font-semibold text-slate-800">{selectedTime}</p>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
-                  <div className="flex items-start gap-3">
-                    <Bell className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm">
-                      <p className="font-medium text-amber-800">Notifications Sent</p>
-                      <p className="text-amber-700">
-                        Confirmation sent to {user?.email}. You'll also receive an SMS reminder before your appointment.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <Link to={createPageUrl('Dashboard')} className="flex-1">
-                    <Button variant="outline" className="w-full">
-                      View My Appointments
-                    </Button>
-                  </Link>
-                  <Link to={createPageUrl('Home')} className="flex-1">
-                    <Button className="w-full bg-teal-600 hover:bg-teal-700">
-                      Back to Home
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50">
+      <EmergencyBar />
+      <Navbar />
+
+      <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link to={createPageUrl('Doctors')} className="inline-flex items-center gap-2 text-slate-600 hover:text-teal-600 transition-colors mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Doctors
-          </Link>
-          <h1 className="text-3xl font-bold text-slate-800">Book Appointment</h1>
-          <p className="text-slate-600 mt-2">Schedule your consultation in a few simple steps</p>
+          <h1 className="text-2xl font-bold text-gray-900">Book an Appointment</h1>
+          <p className="text-gray-500">Schedule a consultation with our specialists</p>
         </div>
 
         {/* Progress Steps */}
-        <div className="flex items-center justify-between mb-8">
-          {[
-            { num: 1, label: 'Select Doctor' },
-            { num: 2, label: 'Date & Time' },
-            { num: 3, label: 'Confirm' }
-          ].map((s, i) => (
-            <React.Fragment key={s.num}>
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold ${
-                  step >= s.num ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-500'
+        {!bookingComplete && (
+          <div className="flex items-center justify-center mb-8">
+            {[1, 2, 3, 4].map((s) => (
+              <React.Fragment key={s}>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                  step === s 
+                    ? 'bg-emerald-500 text-white scale-110' 
+                    : step > s 
+                      ? 'bg-emerald-100 text-emerald-600' 
+                      : 'bg-gray-100 text-gray-400'
                 }`}>
-                  {step > s.num ? <CheckCircle className="w-5 h-5" /> : s.num}
+                  {step > s ? <Check className="w-5 h-5" /> : s}
                 </div>
-                <span className={`hidden sm:block font-medium ${
-                  step >= s.num ? 'text-teal-600' : 'text-slate-400'
-                }`}>{s.label}</span>
-              </div>
-              {i < 2 && <div className={`flex-1 h-1 mx-4 rounded ${step > s.num ? 'bg-teal-600' : 'bg-slate-200'}`} />}
-            </React.Fragment>
-          ))}
-        </div>
+                {s < 4 && (
+                  <div className={`w-16 h-1 mx-2 rounded ${
+                    step > s ? 'bg-emerald-500' : 'bg-gray-200'
+                  }`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        )}
 
-        {/* Step 1: Select Doctor */}
         <AnimatePresence mode="wait">
-          {step === 1 && (
+          {/* Step 1: Symptoms & AI Suggestion */}
+          {step === 1 && !bookingComplete && (
             <motion.div
               key="step1"
               initial={{ opacity: 0, x: 20 }}
@@ -243,50 +248,97 @@ export default function BookAppointment() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle>Select a Doctor</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-emerald-600" />
+                    Describe Your Symptoms
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
-                    {doctors.slice(0, 20).map(doctor => (
-                      <div
-                        key={doctor.id}
-                        onClick={() => {
-                          setSelectedDoctor(doctor);
-                          setStep(2);
-                        }}
-                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                          selectedDoctor?.id === doctor.id
-                            ? 'border-teal-600 bg-teal-50'
-                            : 'border-slate-200 hover:border-teal-300 hover:bg-slate-50'
-                        }`}
-                      >
-                        <div className="flex gap-3">
-                          <div className="w-14 h-14 rounded-lg bg-teal-100 flex items-center justify-center flex-shrink-0">
-                            <span className="text-xl font-bold text-teal-600">
-                              {doctor.name?.charAt(0)}
-                            </span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold text-slate-800 truncate">Dr. {doctor.name}</h3>
-                            <p className="text-sm text-teal-600">{doctor.specialization}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Star className="w-4 h-4 text-amber-500 fill-current" />
-                              <span className="text-sm text-slate-600">{doctor.rating || '4.8'}</span>
-                              <span className="text-sm text-slate-400">•</span>
-                              <span className="text-sm font-medium text-slate-700">₹{doctor.consultation_fee || '500'}</span>
+                <CardContent className="space-y-6">
+                  <div>
+                    <Label htmlFor="symptoms">What brings you in today? (Optional)</Label>
+                    <Textarea
+                      id="symptoms"
+                      placeholder="Describe your symptoms, concerns, or reason for visit..."
+                      value={formData.symptoms}
+                      onChange={(e) => setFormData({ ...formData, symptoms: e.target.value })}
+                      className="mt-2 h-32"
+                    />
+                  </div>
+
+                  {/* AI Suggestion Button */}
+                  <Button
+                    variant="outline"
+                    onClick={getAISuggestion}
+                    disabled={aiSuggesting}
+                    className="w-full border-purple-200 text-purple-600 hover:bg-purple-50"
+                  >
+                    {aiSuggesting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        AI is analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="w-4 h-4 mr-2" />
+                        Get AI Doctor Recommendation
+                      </>
+                    )}
+                  </Button>
+
+                  {/* AI Suggestion Results */}
+                  {aiSuggestion && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="space-y-4"
+                    >
+                      <Alert className="bg-purple-50 border-purple-200">
+                        <Brain className="w-4 h-4 text-purple-600" />
+                        <AlertDescription className="text-purple-800">
+                          <strong>AI Recommendation:</strong> {aiSuggestion.general_advice}
+                        </AlertDescription>
+                      </Alert>
+
+                      <div className="grid md:grid-cols-2 gap-3">
+                        {aiSuggestion.suggestions?.map((suggestion, idx) => (
+                          <div
+                            key={idx}
+                            onClick={() => setFormData({ ...formData, specialty: suggestion.specialty })}
+                            className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                              formData.specialty === suggestion.specialty
+                                ? 'border-emerald-500 bg-emerald-50'
+                                : 'border-gray-200 hover:border-emerald-300'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="font-medium">{suggestion.specialty}</span>
+                              <Badge className={idx === 0 ? 'bg-emerald-500' : 'bg-gray-500'}>
+                                #{idx + 1} Match
+                              </Badge>
                             </div>
+                            <p className="text-sm text-gray-600">{suggestion.reason}</p>
                           </div>
-                        </div>
+                        ))}
                       </div>
-                    ))}
+                    </motion.div>
+                  )}
+
+                  <div className="flex justify-end">
+                    <Button
+                      onClick={() => setStep(2)}
+                      className="bg-emerald-500 hover:bg-emerald-600"
+                    >
+                      Continue
+                      <ChevronRight className="w-4 h-4 ml-2" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
             </motion.div>
           )}
 
-          {/* Step 2: Select Date & Time */}
-          {step === 2 && selectedDoctor && (
+          {/* Step 2: Select Doctor */}
+          {step === 2 && !bookingComplete && (
             <motion.div
               key="step2"
               initial={{ opacity: 0, x: 20 }}
@@ -295,69 +347,79 @@ export default function BookAppointment() {
             >
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Select Date & Time</CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <Stethoscope className="w-4 h-4" />
-                      Dr. {selectedDoctor.name}
-                    </div>
-                  </div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Stethoscope className="w-5 h-5 text-emerald-600" />
+                    Select a Doctor
+                  </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {/* Date Selection */}
-                  <div className="mb-6">
-                    <Label className="text-base font-semibold mb-3 block">Choose Date</Label>
-                    <div className="grid grid-cols-4 md:grid-cols-7 gap-2">
-                      {availableDates.map(date => (
-                        <button
-                          key={date.toISOString()}
-                          onClick={() => setSelectedDate(date)}
-                          className={`p-3 rounded-xl text-center transition-all ${
-                            selectedDate?.toDateString() === date.toDateString()
-                              ? 'bg-teal-600 text-white'
-                              : 'bg-slate-100 hover:bg-teal-50 text-slate-700'
-                          }`}
-                        >
-                          <p className="text-xs opacity-70">{format(date, 'EEE')}</p>
-                          <p className="text-lg font-semibold">{format(date, 'd')}</p>
-                          <p className="text-xs opacity-70">{format(date, 'MMM')}</p>
-                        </button>
-                      ))}
-                    </div>
+                <CardContent className="space-y-4">
+                  {/* Specialty Filter */}
+                  <div className="flex gap-2 overflow-x-auto pb-2">
+                    {specialties.map((spec) => (
+                      <Button
+                        key={spec}
+                        variant={formData.specialty === spec ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setFormData({ ...formData, specialty: spec, doctor: null })}
+                        className={`whitespace-nowrap ${formData.specialty === spec ? 'bg-emerald-500 hover:bg-emerald-600' : ''}`}
+                      >
+                        {spec}
+                      </Button>
+                    ))}
                   </div>
 
-                  {/* Time Selection */}
-                  <div className="mb-6">
-                    <Label className="text-base font-semibold mb-3 block">Choose Time</Label>
-                    <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-                      {timeSlots.map(slot => (
-                        <button
-                          key={slot}
-                          onClick={() => setSelectedTime(slot)}
-                          className={`p-2 rounded-lg text-sm font-medium transition-all ${
-                            selectedTime === slot
-                              ? 'bg-teal-600 text-white'
-                              : 'bg-slate-100 hover:bg-teal-50 text-slate-700'
-                          }`}
-                        >
-                          {slot}
-                        </button>
-                      ))}
-                    </div>
+                  {/* Doctor List */}
+                  <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {filteredDoctors.map((doctor) => (
+                      <div
+                        key={doctor.id}
+                        onClick={() => setFormData({ ...formData, doctor })}
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          formData.doctor?.id === doctor.id
+                            ? 'border-emerald-500 bg-emerald-50'
+                            : 'border-gray-200 hover:border-emerald-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <Avatar className="w-14 h-14">
+                            <AvatarImage src={doctor.image} />
+                            <AvatarFallback>{doctor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <h3 className="font-semibold">{doctor.name}</h3>
+                              <Badge variant="secondary">${doctor.fee}</Badge>
+                            </div>
+                            <p className="text-sm text-emerald-600">{doctor.specialty}</p>
+                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                              <span>{doctor.experience} yrs exp</span>
+                              <span>⭐ {doctor.rating}</span>
+                              <span className="flex items-center gap-1">
+                                <Building2 className="w-3 h-3" />
+                                {doctor.hospital}
+                              </span>
+                            </div>
+                          </div>
+                          {formData.doctor?.id === doctor.id && (
+                            <Check className="w-6 h-6 text-emerald-500" />
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex justify-between pt-4">
                     <Button variant="outline" onClick={() => setStep(1)}>
-                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      <ChevronLeft className="w-4 h-4 mr-2" />
                       Back
                     </Button>
-                    <Button 
-                      className="flex-1 bg-teal-600 hover:bg-teal-700"
-                      disabled={!selectedDate || !selectedTime}
+                    <Button
                       onClick={() => setStep(3)}
+                      disabled={!formData.doctor}
+                      className="bg-emerald-500 hover:bg-emerald-600"
                     >
                       Continue
-                      <ArrowRight className="w-4 h-4 ml-2" />
+                      <ChevronRight className="w-4 h-4 ml-2" />
                     </Button>
                   </div>
                 </CardContent>
@@ -365,118 +427,319 @@ export default function BookAppointment() {
             </motion.div>
           )}
 
-          {/* Step 3: Confirm */}
-          {step === 3 && (
+          {/* Step 3: Select Date, Time & Type */}
+          {step === 3 && !bookingComplete && (
             <motion.div
               key="step3"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
             >
-              <div className="grid md:grid-cols-3 gap-6">
-                <div className="md:col-span-2">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Additional Information</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div>
-                        <Label>Describe your symptoms (optional)</Label>
-                        <Textarea
-                          placeholder="Briefly describe what you're experiencing..."
-                          value={symptoms}
-                          onChange={(e) => setSymptoms(e.target.value)}
-                          className="mt-2"
-                          rows={4}
-                        />
-                      </div>
-
-                      {!user && (
-                        <div className="p-4 bg-amber-50 rounded-xl border border-amber-200">
-                          <div className="flex items-start gap-3">
-                            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-emerald-600" />
+                    Select Date & Time
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Appointment Type */}
+                  <div>
+                    <Label className="mb-3 block">Appointment Type</Label>
+                    <RadioGroup
+                      value={formData.appointmentType}
+                      onValueChange={(value) => setFormData({ ...formData, appointmentType: value })}
+                      className="flex gap-4"
+                    >
+                      <div className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        formData.appointmentType === 'in_person' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'
+                      }`}>
+                        <div className="flex items-center space-x-3">
+                          <RadioGroupItem value="in_person" id="in_person" />
+                          <Label htmlFor="in_person" className="flex items-center gap-2 cursor-pointer">
+                            <MapPin className="w-5 h-5 text-blue-500" />
                             <div>
-                              <p className="font-medium text-amber-800">Login Required</p>
-                              <p className="text-sm text-amber-700">
-                                Please login to complete your booking.
-                              </p>
+                              <p className="font-medium">In-Person</p>
+                              <p className="text-xs text-gray-500">Visit the clinic</p>
                             </div>
-                          </div>
+                          </Label>
                         </div>
+                      </div>
+                      <div className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        formData.appointmentType === 'video' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'
+                      }`}>
+                        <div className="flex items-center space-x-3">
+                          <RadioGroupItem value="video" id="video" />
+                          <Label htmlFor="video" className="flex items-center gap-2 cursor-pointer">
+                            <Video className="w-5 h-5 text-purple-500" />
+                            <div>
+                              <p className="font-medium">Video Call</p>
+                              <p className="text-xs text-gray-500">Online consultation</p>
+                            </div>
+                          </Label>
+                        </div>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Date Selection */}
+                  <div>
+                    <Label className="mb-3 block">Select Date</Label>
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {generateDates().map((date) => {
+                        const dateStr = format(date, 'yyyy-MM-dd');
+                        const isSelected = formData.date === dateStr;
+                        return (
+                          <button
+                            key={dateStr}
+                            onClick={() => setFormData({ ...formData, date: dateStr, time: '' })}
+                            className={`flex-shrink-0 p-3 rounded-lg text-center min-w-[80px] transition-all ${
+                              isSelected
+                                ? 'bg-emerald-500 text-white'
+                                : 'bg-gray-100 hover:bg-gray-200'
+                            }`}
+                          >
+                            <p className="text-xs">{format(date, 'EEE')}</p>
+                            <p className="text-lg font-bold">{format(date, 'd')}</p>
+                            <p className="text-xs">{format(date, 'MMM')}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Time Selection */}
+                  <div>
+                    <Label className="mb-3 block">Select Time</Label>
+                    <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                      {timeSlots.map((time) => {
+                        const isAvailable = formData.doctor?.available?.includes(time);
+                        const isSelected = formData.time === time;
+                        return (
+                          <button
+                            key={time}
+                            onClick={() => isAvailable && setFormData({ ...formData, time })}
+                            disabled={!isAvailable}
+                            className={`p-2 rounded-lg text-sm font-medium transition-all ${
+                              isSelected
+                                ? 'bg-emerald-500 text-white'
+                                : isAvailable
+                                  ? 'bg-gray-100 hover:bg-emerald-100'
+                                  : 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                            }`}
+                          >
+                            {time}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between pt-4">
+                    <Button variant="outline" onClick={() => setStep(2)}>
+                      <ChevronLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button
+                      onClick={() => setStep(4)}
+                      disabled={!formData.time}
+                      className="bg-emerald-500 hover:bg-emerald-600"
+                    >
+                      Continue
+                      <ChevronRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Step 4: Review & Confirm */}
+          {step === 4 && !bookingComplete && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+            >
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Check className="w-5 h-5 text-emerald-600" />
+                    Review & Confirm
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Doctor Info */}
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-16 h-16">
+                        <AvatarImage src={formData.doctor?.image} />
+                        <AvatarFallback>{formData.doctor?.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-semibold text-lg">{formData.doctor?.name}</h3>
+                        <p className="text-emerald-600">{formData.doctor?.specialty}</p>
+                        <p className="text-sm text-gray-500 flex items-center gap-1">
+                          <Building2 className="w-4 h-4" />
+                          {formData.doctor?.hospital}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Appointment Details */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-blue-50 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Calendar className="w-5 h-5 text-blue-600" />
+                        <span className="font-medium">Date & Time</span>
+                      </div>
+                      <p className="text-lg font-semibold">
+                        {format(new Date(formData.date), 'EEEE, MMMM d, yyyy')}
+                      </p>
+                      <p className="text-blue-600">{formData.time}</p>
+                    </div>
+
+                    <div className="bg-purple-50 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        {formData.appointmentType === 'video' ? (
+                          <Video className="w-5 h-5 text-purple-600" />
+                        ) : (
+                          <MapPin className="w-5 h-5 text-purple-600" />
+                        )}
+                        <span className="font-medium">Appointment Type</span>
+                      </div>
+                      <p className="text-lg font-semibold">
+                        {formData.appointmentType === 'video' ? 'Video Consultation' : 'In-Person Visit'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {formData.symptoms && (
+                    <div className="bg-amber-50 rounded-xl p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-5 h-5 text-amber-600" />
+                        <span className="font-medium">Symptoms</span>
+                      </div>
+                      <p className="text-gray-700">{formData.symptoms}</p>
+                    </div>
+                  )}
+
+                  {/* Fee */}
+                  <div className="bg-emerald-50 rounded-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Consultation Fee</span>
+                      <span className="text-2xl font-bold text-emerald-600">${formData.doctor?.fee}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between pt-4">
+                    <Button variant="outline" onClick={() => setStep(3)}>
+                      <ChevronLeft className="w-4 h-4 mr-2" />
+                      Back
+                    </Button>
+                    <Button
+                      onClick={handleSubmit}
+                      disabled={submitting}
+                      className="bg-emerald-500 hover:bg-emerald-600"
+                    >
+                      {submitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Booking...
+                        </>
+                      ) : (
+                        <>
+                          Confirm Booking
+                          <Check className="w-4 h-4 ml-2" />
+                        </>
                       )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
 
-                      <div className="flex gap-3 pt-4">
-                        <Button variant="outline" onClick={() => setStep(2)}>
-                          <ArrowLeft className="w-4 h-4 mr-2" />
-                          Back
-                        </Button>
-                        <Button 
-                          className="flex-1 bg-teal-600 hover:bg-teal-700"
-                          onClick={handleSubmit}
-                          disabled={isSubmitting}
-                        >
-                          {isSubmitting ? 'Booking...' : 'Confirm Booking'}
-                          <CheckCircle className="w-4 h-4 ml-2" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+          {/* Booking Confirmation */}
+          {bookingComplete && (
+            <motion.div
+              key="complete"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+            >
+              <Card className="text-center">
+                <CardContent className="py-12">
+                  <div className="w-20 h-20 bg-emerald-100 rounded-full mx-auto flex items-center justify-center mb-6">
+                    <Check className="w-10 h-10 text-emerald-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Appointment Booked!</h2>
+                  <p className="text-gray-500 mb-8">Your appointment has been confirmed successfully</p>
 
-                {/* Summary */}
-                <div>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Booking Summary</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center gap-3 pb-4 border-b">
-                        <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-                          <span className="text-lg font-bold text-teal-600">
-                            {selectedDoctor?.name?.charAt(0)}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-semibold text-slate-800">Dr. {selectedDoctor?.name}</p>
-                          <p className="text-sm text-teal-600">{selectedDoctor?.specialization}</p>
-                        </div>
+                  <div className="bg-gray-50 rounded-xl p-6 max-w-md mx-auto text-left space-y-4">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="w-12 h-12">
+                        <AvatarImage src={formData.doctor?.image} />
+                        <AvatarFallback>{formData.doctor?.name?.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-semibold">{formData.doctor?.name}</p>
+                        <p className="text-sm text-emerald-600">{formData.doctor?.specialty}</p>
                       </div>
+                    </div>
 
-                      <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Date</span>
-                          <span className="font-medium text-slate-800">
-                            {selectedDate && format(selectedDate, 'dd MMM yyyy')}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Time</span>
-                          <span className="font-medium text-slate-800">{selectedTime}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500">Hospital</span>
-                          <span className="font-medium text-slate-800 text-right text-sm">
-                            {selectedDoctor?.hospital_name || 'VitaCare'}
-                          </span>
-                        </div>
+                    <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                      <div>
+                        <p className="text-xs text-gray-500">Date</p>
+                        <p className="font-medium">{format(new Date(formData.date), 'MMM d, yyyy')}</p>
                       </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Time</p>
+                        <p className="font-medium">{formData.time}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Mode</p>
+                        <p className="font-medium">{formData.appointmentType === 'video' ? 'Video Call' : 'In-Person'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Status</p>
+                        <Badge className="bg-emerald-100 text-emerald-700">Confirmed</Badge>
+                      </div>
+                    </div>
+                  </div>
 
-                      <div className="pt-4 border-t">
-                        <div className="flex justify-between items-center">
-                          <span className="font-semibold text-slate-800">Consultation Fee</span>
-                          <span className="text-xl font-bold text-teal-600">
-                            ₹{selectedDoctor?.consultation_fee || '500'}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                  <div className="flex gap-4 justify-center mt-8">
+                    <Button variant="outline" onClick={() => navigate(createPageUrl('Dashboard'))}>
+                      Go to Dashboard
+                    </Button>
+                    <Button 
+                      className="bg-emerald-500 hover:bg-emerald-600"
+                      onClick={() => {
+                        setBookingComplete(false);
+                        setStep(1);
+                        setFormData({
+                          specialty: 'All',
+                          doctor: null,
+                          appointmentType: 'in_person',
+                          date: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+                          time: '',
+                          symptoms: ''
+                        });
+                        setAiSuggestion(null);
+                      }}
+                    >
+                      Book Another
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </main>
+
+      <AIChatbot />
     </div>
   );
 }

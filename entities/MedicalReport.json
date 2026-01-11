@@ -1,0 +1,54 @@
+{
+  "name": "MedicalReport",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to patient"
+    },
+    "file_name": {
+      "type": "string",
+      "description": "Original file name"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL to the uploaded file"
+    },
+    "file_type": {
+      "type": "string",
+      "enum": [
+        "pdf",
+        "jpg",
+        "png",
+        "jpeg"
+      ],
+      "description": "Type of file"
+    },
+    "report_type": {
+      "type": "string",
+      "enum": [
+        "blood_test",
+        "xray",
+        "mri",
+        "ct_scan",
+        "prescription",
+        "discharge_summary",
+        "other"
+      ],
+      "description": "Category of medical report"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the report"
+    },
+    "report_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the report"
+    }
+  },
+  "required": [
+    "file_name",
+    "file_url"
+  ]
+}

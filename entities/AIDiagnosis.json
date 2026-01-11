@@ -1,0 +1,44 @@
+{
+  "name": "AIDiagnosis",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to patient"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL to the analyzed image"
+    },
+    "condition": {
+      "type": "string",
+      "description": "Detected condition"
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Confidence score 0-100"
+    },
+    "recommended_specialist": {
+      "type": "string",
+      "description": "Recommended specialist type"
+    },
+    "advice": {
+      "type": "string",
+      "description": "AI provided advice"
+    },
+    "severity": {
+      "type": "string",
+      "enum": [
+        "low",
+        "moderate",
+        "high",
+        "critical"
+      ],
+      "description": "Severity level"
+    }
+  },
+  "required": [
+    "image_url",
+    "condition"
+  ]
+}

@@ -1,397 +1,277 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { motion } from 'framer-motion';
-import { 
-  Heart, Activity, Apple, Brain, Moon, Scale, 
-  Calculator, ChevronRight, Pill, ShoppingBag, 
-  CheckCircle, Star, Clock, Leaf
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import { Leaf, Heart, Brain, Dumbbell, Moon, Apple, Droplets, Sun, ChevronRight, Play, Clock, Loader2, Sparkles } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import EmergencyBar from '../components/vetacare/EmergencyBar';
+import Navbar from '../components/vetacare/Navbar';
+import AIChatbot from '../components/vetacare/AIChatbot';
 
-const healthPackages = [
-  {
-    name: 'Basic Health Checkup',
-    price: 999,
-    originalPrice: 1499,
-    tests: 45,
-    includes: ['Blood Sugar', 'Lipid Profile', 'Kidney Function', 'Liver Function', 'Thyroid Profile'],
-    popular: false
-  },
-  {
-    name: 'Comprehensive Health Package',
-    price: 2499,
-    originalPrice: 3999,
-    tests: 75,
-    includes: ['Complete Blood Count', 'Lipid Profile', 'Kidney & Liver Function', 'Thyroid', 'Vitamin Tests', 'Cardiac Markers'],
-    popular: true
-  },
-  {
-    name: 'Executive Health Checkup',
-    price: 4999,
-    originalPrice: 7999,
-    tests: 100,
-    includes: ['All Basic Tests', 'Cancer Markers', 'Heart Checkup', 'Bone Density', 'Full Body CT', 'Diet Consultation'],
-    popular: false
-  },
-  {
-    name: 'Senior Citizen Package',
-    price: 3499,
-    originalPrice: 5499,
-    tests: 80,
-    includes: ['Complete Health Profile', 'Bone Health', 'Heart Assessment', 'Eye Checkup', 'Memory Assessment'],
-    popular: false
-  }
+const wellnessCategories = [
+  { id: 'nutrition', name: 'Nutrition', icon: Apple, color: 'bg-green-500', articles: 12 },
+  { id: 'fitness', name: 'Fitness', icon: Dumbbell, color: 'bg-orange-500', articles: 18 },
+  { id: 'mental', name: 'Mental Health', icon: Brain, color: 'bg-purple-500', articles: 15 },
+  { id: 'sleep', name: 'Sleep', icon: Moon, color: 'bg-indigo-500', articles: 8 },
+  { id: 'hydration', name: 'Hydration', icon: Droplets, color: 'bg-blue-500', articles: 6 },
+  { id: 'lifestyle', name: 'Lifestyle', icon: Sun, color: 'bg-yellow-500', articles: 20 },
 ];
 
-const dietPlans = [
-  { name: 'Weight Loss Plan', icon: Scale, color: 'bg-rose-100 text-rose-600', desc: 'Personalized calorie-deficit diet' },
-  { name: 'Diabetes Friendly', icon: Apple, color: 'bg-green-100 text-green-600', desc: 'Low GI foods & balanced meals' },
-  { name: 'Heart Healthy', icon: Heart, color: 'bg-red-100 text-red-600', desc: 'Low sodium, heart-friendly diet' },
-  { name: 'High Protein', icon: Activity, color: 'bg-blue-100 text-blue-600', desc: 'Muscle building nutrition' }
+const wellnessArticles = [
+  { id: 1, title: '10 Foods That Boost Your Immune System', category: 'nutrition', readTime: 5, image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400' },
+  { id: 2, title: '15-Minute Morning Workout Routine', category: 'fitness', readTime: 8, image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400' },
+  { id: 3, title: 'Managing Stress: A Complete Guide', category: 'mental', readTime: 10, image: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=400' },
+  { id: 4, title: 'Sleep Better: Science-Backed Tips', category: 'sleep', readTime: 6, image: 'https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=400' },
+  { id: 5, title: 'The Importance of Daily Hydration', category: 'hydration', readTime: 4, image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400' },
+  { id: 6, title: 'Building Healthy Habits That Stick', category: 'lifestyle', readTime: 7, image: 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?w=400' },
 ];
 
-const healthTipsData = [
-  { title: 'Stay Hydrated', content: 'Drink at least 8 glasses of water daily for optimal health.', category: 'Lifestyle' },
-  { title: 'Regular Exercise', content: '30 minutes of moderate exercise 5 times a week can transform your health.', category: 'Exercise' },
-  { title: 'Sleep Well', content: '7-8 hours of quality sleep is essential for physical and mental health.', category: 'Sleep' },
-  { title: 'Balanced Diet', content: 'Include fruits, vegetables, whole grains, and lean proteins in every meal.', category: 'Nutrition' },
-  { title: 'Stress Management', content: 'Practice meditation or deep breathing for 10 minutes daily.', category: 'Mental Health' },
-  { title: 'Regular Checkups', content: 'Annual health checkups can help detect issues early.', category: 'Prevention' }
+const dailyTips = [
+  "Drink at least 8 glasses of water today",
+  "Take a 10-minute walk after lunch",
+  "Practice deep breathing for 5 minutes",
+  "Eat at least 2 servings of vegetables",
+  "Get 7-8 hours of quality sleep tonight"
 ];
 
 export default function Wellness() {
-  const [height, setHeight] = useState('');
-  const [weight, setWeight] = useState('');
-  const [bmiResult, setBmiResult] = useState(null);
-
-  const { data: healthTips = [] } = useQuery({
-    queryKey: ['health-tips'],
-    queryFn: () => base44.entities.HealthTip.list('-created_date', 10)
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [dailyProgress, setDailyProgress] = useState({
+    water: 4,
+    steps: 6500,
+    sleep: 7,
+    meals: 2
   });
 
-  const displayTips = healthTips.length > 0 ? healthTips : healthTipsData;
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
-  const calculateBMI = () => {
-    if (height && weight) {
-      const heightM = parseFloat(height) / 100;
-      const bmi = parseFloat(weight) / (heightM * heightM);
-      let category = '';
-      let color = '';
-      
-      if (bmi < 18.5) {
-        category = 'Underweight';
-        color = 'text-blue-600';
-      } else if (bmi < 25) {
-        category = 'Normal';
-        color = 'text-green-600';
-      } else if (bmi < 30) {
-        category = 'Overweight';
-        color = 'text-amber-600';
-      } else {
-        category = 'Obese';
-        color = 'text-red-600';
+  const checkAuth = async () => {
+    try {
+      const isAuth = await base44.auth.isAuthenticated();
+      if (!isAuth) {
+        base44.auth.redirectToLogin(createPageUrl('Wellness'));
+        return;
       }
-
-      setBmiResult({ value: bmi.toFixed(1), category, color });
+    } catch (error) {
+      console.error('Auth error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const filteredArticles = selectedCategory === 'all' 
+    ? wellnessArticles 
+    : wellnessArticles.filter(a => a.category === selectedCategory);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-teal-600 to-teal-700 py-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center text-white"
-          >
-            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Leaf className="w-8 h-8" />
+    <div className="min-h-screen bg-gray-50">
+      <EmergencyBar />
+      <Navbar />
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-r from-emerald-500 to-teal-600 rounded-2xl p-8 mb-8 text-white">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <Leaf className="w-6 h-6" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">
-              Wellness & Prevention
-            </h1>
-            <p className="text-teal-100 text-lg max-w-2xl mx-auto">
-              Take charge of your health with our comprehensive wellness programs, 
-              health packages, and preventive care solutions.
-            </p>
-          </motion.div>
+            <div>
+              <h1 className="text-2xl font-bold">Wellness Center</h1>
+              <p className="text-emerald-100">Your daily guide to a healthier life</p>
+            </div>
+          </div>
+          
+          <div className="grid md:grid-cols-4 gap-4 mt-6">
+            <div className="bg-white/10 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Droplets className="w-5 h-5" />
+                <span className="text-sm">{dailyProgress.water}/8 glasses</span>
+              </div>
+              <Progress value={(dailyProgress.water / 8) * 100} className="h-2 bg-white/20" />
+              <p className="text-xs mt-2 text-emerald-100">Water Intake</p>
+            </div>
+            
+            <div className="bg-white/10 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Dumbbell className="w-5 h-5" />
+                <span className="text-sm">{dailyProgress.steps.toLocaleString()}/10k</span>
+              </div>
+              <Progress value={(dailyProgress.steps / 10000) * 100} className="h-2 bg-white/20" />
+              <p className="text-xs mt-2 text-emerald-100">Daily Steps</p>
+            </div>
+            
+            <div className="bg-white/10 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Moon className="w-5 h-5" />
+                <span className="text-sm">{dailyProgress.sleep}/8 hrs</span>
+              </div>
+              <Progress value={(dailyProgress.sleep / 8) * 100} className="h-2 bg-white/20" />
+              <p className="text-xs mt-2 text-emerald-100">Sleep</p>
+            </div>
+            
+            <div className="bg-white/10 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <Apple className="w-5 h-5" />
+                <span className="text-sm">{dailyProgress.meals}/3 meals</span>
+              </div>
+              <Progress value={(dailyProgress.meals / 3) * 100} className="h-2 bg-white/20" />
+              <p className="text-xs mt-2 text-emerald-100">Healthy Meals</p>
+            </div>
+          </div>
         </div>
-      </section>
 
-      {/* Main Content */}
-      <section className="py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <Tabs defaultValue="packages" className="space-y-8">
-            <TabsList className="bg-white shadow-sm">
-              <TabsTrigger value="packages">Health Packages</TabsTrigger>
-              <TabsTrigger value="bmi">BMI Calculator</TabsTrigger>
-              <TabsTrigger value="diet">Diet Plans</TabsTrigger>
-              <TabsTrigger value="tips">Health Tips</TabsTrigger>
-              <TabsTrigger value="pharmacy">E-Pharmacy</TabsTrigger>
-            </TabsList>
-
-            {/* Health Packages */}
-            <TabsContent value="packages">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Preventive Health Packages</h2>
-                <p className="text-slate-600">Comprehensive health checkups designed for different needs</p>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {healthPackages.map((pkg, index) => (
-                  <motion.div
-                    key={pkg.name}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Categories */}
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              <Button
+                variant={selectedCategory === 'all' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory('all')}
+                className={selectedCategory === 'all' ? 'bg-emerald-500 hover:bg-emerald-600' : ''}
+              >
+                All
+              </Button>
+              {wellnessCategories.map((cat) => {
+                const Icon = cat.icon;
+                return (
+                  <Button
+                    key={cat.id}
+                    variant={selectedCategory === cat.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`whitespace-nowrap ${selectedCategory === cat.id ? 'bg-emerald-500 hover:bg-emerald-600' : ''}`}
                   >
-                    <Card className={`h-full relative ${pkg.popular ? 'ring-2 ring-teal-500' : ''}`}>
-                      {pkg.popular && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                          <Badge className="bg-teal-600 text-white">Most Popular</Badge>
-                        </div>
-                      )}
-                      <CardContent className="p-6">
-                        <h3 className="font-bold text-lg text-slate-800 mb-2">{pkg.name}</h3>
-                        <div className="flex items-baseline gap-2 mb-4">
-                          <span className="text-3xl font-bold text-teal-600">₹{pkg.price}</span>
-                          <span className="text-slate-400 line-through">₹{pkg.originalPrice}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mb-4 text-slate-600">
-                          <Activity className="w-4 h-4" />
-                          <span>{pkg.tests} Tests Included</span>
-                        </div>
-                        <div className="space-y-2 mb-6">
-                          {pkg.includes.map(item => (
-                            <div key={item} className="flex items-center gap-2 text-sm text-slate-600">
-                              <CheckCircle className="w-4 h-4 text-teal-600 flex-shrink-0" />
-                              <span>{item}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <Button className="w-full bg-teal-600 hover:bg-teal-700">
-                          Book Now
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-            </TabsContent>
+                    <Icon className="w-4 h-4 mr-1" />
+                    {cat.name}
+                  </Button>
+                );
+              })}
+            </div>
 
-            {/* BMI Calculator */}
-            <TabsContent value="bmi">
-              <div className="max-w-xl mx-auto">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calculator className="w-5 h-5 text-teal-600" />
-                      BMI Calculator
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-slate-600 mb-6">
-                      Body Mass Index (BMI) is a measure of body fat based on height and weight.
-                    </p>
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div>
-                        <Label>Height (cm)</Label>
-                        <Input
-                          type="number"
-                          value={height}
-                          onChange={(e) => setHeight(e.target.value)}
-                          placeholder="e.g., 170"
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Weight (kg)</Label>
-                        <Input
-                          type="number"
-                          value={weight}
-                          onChange={(e) => setWeight(e.target.value)}
-                          placeholder="e.g., 70"
-                          className="mt-1"
-                        />
-                      </div>
+            {/* Articles */}
+            <div className="grid md:grid-cols-2 gap-4">
+              {filteredArticles.map((article) => {
+                const category = wellnessCategories.find(c => c.id === article.category);
+                const Icon = category?.icon || Leaf;
+                return (
+                  <Card key={article.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
+                    <div className="relative h-40">
+                      <img 
+                        src={article.image} 
+                        alt={article.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                      <Badge className={`absolute top-3 left-3 ${category?.color} text-white`}>
+                        <Icon className="w-3 h-3 mr-1" />
+                        {category?.name}
+                      </Badge>
                     </div>
-                    <Button 
-                      onClick={calculateBMI}
-                      className="w-full bg-teal-600 hover:bg-teal-700"
-                      disabled={!height || !weight}
-                    >
-                      Calculate BMI
-                    </Button>
-
-                    {bmiResult && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="mt-6 p-6 bg-slate-50 rounded-xl text-center"
-                      >
-                        <p className="text-slate-500 mb-2">Your BMI</p>
-                        <p className={`text-5xl font-bold ${bmiResult.color}`}>{bmiResult.value}</p>
-                        <p className={`text-lg font-medium mt-2 ${bmiResult.color}`}>{bmiResult.category}</p>
-                        
-                        <div className="mt-6 grid grid-cols-4 gap-2 text-xs">
-                          <div className="p-2 bg-blue-100 rounded text-blue-700">
-                            <p className="font-semibold">&lt;18.5</p>
-                            <p>Underweight</p>
-                          </div>
-                          <div className="p-2 bg-green-100 rounded text-green-700">
-                            <p className="font-semibold">18.5-24.9</p>
-                            <p>Normal</p>
-                          </div>
-                          <div className="p-2 bg-amber-100 rounded text-amber-700">
-                            <p className="font-semibold">25-29.9</p>
-                            <p>Overweight</p>
-                          </div>
-                          <div className="p-2 bg-red-100 rounded text-red-700">
-                            <p className="font-semibold">&gt;30</p>
-                            <p>Obese</p>
-                          </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{article.title}</h3>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-gray-500 text-sm">
+                          <Clock className="w-4 h-4" />
+                          {article.readTime} min read
                         </div>
-                      </motion.div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
+                        <ChevronRight className="w-4 h-4 text-gray-400" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
 
-            {/* Diet Plans */}
-            <TabsContent value="diet">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Personalized Diet Plans</h2>
-                <p className="text-slate-600">Expert-curated nutrition plans for your health goals</p>
-              </div>
-              <div className="grid md:grid-cols-2 gap-6">
-                {dietPlans.map((plan, index) => (
-                  <motion.div
-                    key={plan.name}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Daily Tips */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-yellow-500" />
+                  Daily Wellness Tips
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {dailyTips.map((tip, idx) => (
+                  <div 
+                    key={idx}
+                    className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
                   >
-                    <Card className="hover:shadow-lg transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-4">
-                          <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${plan.color}`}>
-                            <plan.icon className="w-7 h-7" />
-                          </div>
-                          <div className="flex-1">
-                            <h3 className="font-bold text-lg text-slate-800">{plan.name}</h3>
-                            <p className="text-slate-600 mt-1">{plan.desc}</p>
-                            <Button className="mt-4" variant="outline">
-                              View Plan
-                              <ChevronRight className="w-4 h-4 ml-1" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-
-              <Card className="mt-8">
-                <CardContent className="p-8 text-center">
-                  <div className="w-16 h-16 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Apple className="w-8 h-8 text-teal-600" />
+                    <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-emerald-600">{idx + 1}</span>
+                    </div>
+                    <p className="text-sm text-gray-700">{tip}</p>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-800 mb-2">Get a Custom Diet Plan</h3>
-                  <p className="text-slate-600 mb-6 max-w-md mx-auto">
-                    Consult with our certified nutritionists for a personalized diet plan 
-                    tailored to your health goals and medical conditions.
-                  </p>
-                  <Link to={createPageUrl('Doctors')}>
-                    <Button className="bg-teal-600 hover:bg-teal-700">
-                      Book Nutrition Consultation
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Health Tips */}
-            <TabsContent value="tips">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-slate-800 mb-2">Health Tips & Articles</h2>
-                <p className="text-slate-600">Expert advice for a healthier lifestyle</p>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {displayTips.map((tip, index) => (
-                  <motion.div
-                    key={tip.title}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                  >
-                    <Card className="h-full hover:shadow-lg transition-shadow">
-                      <CardContent className="p-6">
-                        <Badge variant="secondary" className="mb-3">{tip.category}</Badge>
-                        <h3 className="font-bold text-lg text-slate-800 mb-2">{tip.title}</h3>
-                        <p className="text-slate-600 text-sm">{tip.content}</p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
                 ))}
-              </div>
-            </TabsContent>
+              </CardContent>
+            </Card>
 
-            {/* E-Pharmacy */}
-            <TabsContent value="pharmacy">
-              <div className="text-center py-16">
-                <div className="w-20 h-20 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Pill className="w-10 h-10 text-teal-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-slate-800 mb-4">VitaCare E-Pharmacy</h2>
-                <p className="text-slate-600 max-w-md mx-auto mb-8">
-                  Order medicines online and get them delivered to your doorstep. 
-                  Flat 20% off on all medicines with free delivery on orders above ₹499.
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Link to={createPageUrl('Dashboard')}>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Heart className="w-4 h-4 mr-2 text-red-500" />
+                    Health Checkup
+                  </Button>
+                </Link>
+                <Link to={createPageUrl('Specialists')}>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Brain className="w-4 h-4 mr-2 text-purple-500" />
+                    Talk to a Specialist
+                  </Button>
+                </Link>
+                <Link to={createPageUrl('Hospitals')}>
+                  <Button variant="outline" className="w-full justify-start">
+                    <Dumbbell className="w-4 h-4 mr-2 text-orange-500" />
+                    Find Fitness Centers
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* BMI Calculator Quick */}
+            <Card className="bg-gradient-to-br from-teal-500 to-emerald-600 text-white">
+              <CardContent className="p-6">
+                <h3 className="font-semibold mb-2">Track Your BMI</h3>
+                <p className="text-sm text-white/80 mb-4">
+                  Keep track of your body mass index for better health insights
                 </p>
-                
-                <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto mb-8">
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <ShoppingBag className="w-8 h-8 text-teal-600 mx-auto mb-3" />
-                      <h3 className="font-semibold text-slate-800">50,000+ Products</h3>
-                      <p className="text-sm text-slate-500">Medicines & Healthcare</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <Clock className="w-8 h-8 text-teal-600 mx-auto mb-3" />
-                      <h3 className="font-semibold text-slate-800">Express Delivery</h3>
-                      <p className="text-sm text-slate-500">Within 2-4 hours</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <Star className="w-8 h-8 text-teal-600 mx-auto mb-3" />
-                      <h3 className="font-semibold text-slate-800">20% Off</h3>
-                      <p className="text-sm text-slate-500">On all medicines</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Button size="lg" className="bg-teal-600 hover:bg-teal-700">
-                  <ShoppingBag className="w-5 h-5 mr-2" />
-                  Browse Pharmacy
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
+                <Link to={createPageUrl('PatientCorner')}>
+                  <Button variant="secondary" className="w-full">
+                    Update Profile
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </section>
+      </main>
+
+      <AIChatbot />
     </div>
   );
 }

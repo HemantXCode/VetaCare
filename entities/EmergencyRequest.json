@@ -1,0 +1,57 @@
+{
+  "name": "EmergencyRequest",
+  "type": "object",
+  "properties": {
+    "patient_id": {
+      "type": "string",
+      "description": "Reference to patient"
+    },
+    "latitude": {
+      "type": "number",
+      "description": "User latitude"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "User longitude"
+    },
+    "address": {
+      "type": "string",
+      "description": "Formatted address"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "requested",
+        "dispatched",
+        "en_route",
+        "arrived",
+        "completed",
+        "cancelled"
+      ],
+      "default": "requested"
+    },
+    "ambulance_id": {
+      "type": "string",
+      "description": "Assigned ambulance ID"
+    },
+    "estimated_arrival": {
+      "type": "number",
+      "description": "ETA in minutes"
+    },
+    "emergency_type": {
+      "type": "string",
+      "enum": [
+        "cardiac",
+        "accident",
+        "breathing",
+        "stroke",
+        "other"
+      ],
+      "description": "Type of emergency"
+    }
+  },
+  "required": [
+    "latitude",
+    "longitude"
+  ]
+}

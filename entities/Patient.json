@@ -1,0 +1,53 @@
+{
+  "name": "Patient",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to the user"
+    },
+    "name": {
+      "type": "string",
+      "description": "Patient full name"
+    },
+    "age": {
+      "type": "number",
+      "description": "Patient age in years"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Patient weight in kg"
+    },
+    "blood_type": {
+      "type": "string",
+      "enum": [
+        "A+",
+        "A-",
+        "B+",
+        "B-",
+        "AB+",
+        "AB-",
+        "O+",
+        "O-",
+        "Unknown"
+      ],
+      "description": "Blood type"
+    },
+    "allergies": {
+      "type": "string",
+      "description": "Known allergies"
+    },
+    "emergency_contact": {
+      "type": "string",
+      "description": "Emergency contact number"
+    },
+    "onboarding_complete": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "name",
+    "age"
+  ]
+}
